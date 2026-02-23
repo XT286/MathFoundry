@@ -1,0 +1,31 @@
+from fastapi import FastAPI
+
+from .config import CONFIG
+from .grounding import answer_with_grounding
+from .models import QARequest, SearchRequest
+from .retrieval import search
+
+app = FastAPI(title="MathFoundry", version="0.1.0")
+
+
+@app.get("/health")
+def health() -> dict:
+    return {
+        "ok": True,
+        "budget_cap_usd": CONFIG.monthly_budget_usd,
+        "primary_category": CONFIG.arxiv_primary_category,
+        "strict_abstain": CONFIG.strict_abstain,
+    }
+
+
+@app.post("/search")
+def search_endpoint(req: SearchRequest) -> dict:
+    results = search(req)
+    return {"query": req.query, "count": len(results), "results": results}
+
+
+@app.post("/qa")
+def qa_endpoint(req: QARequest) -> dict:
+    candidates = search(SearchRequest(query=req.query, limit=10))
+    grounded = answer_with_grounding(req.query, candidates)
+    return grounded.model_dump()

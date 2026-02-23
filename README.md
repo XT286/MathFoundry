@@ -20,6 +20,25 @@ MathFoundry is not just a reference finder and not plain RAG.
 - `docs/RFC-0006-web-ux-and-ask-interaction-model.md`
 
 ## MVP focus
-- arXiv-first ingestion
+- arXiv-first ingestion (initial scope: `math.AG`)
 - Hybrid retrieval (lexical + semantic)
 - Citation-grounded QA (abstain on weak evidence)
+
+## Vertical-slice scaffold (in progress)
+- FastAPI endpoints: `/health`, `/search`, `/qa`
+- Grounded answer contract skeleton
+- arXiv `math.AG` ingestion script (`scripts/ingest_arxiv_math_ag.py`)
+- Initial API tests
+
+## Run locally
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+uvicorn mathfoundry.app:app --reload
+```
+
+Run tests:
+```bash
+pytest
+```
