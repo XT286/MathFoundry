@@ -11,7 +11,13 @@ MathFoundry is not just a reference finder and not plain RAG.
 
 ## Current docs
 - `docs/PRD.md`
+- `docs/RFC-INDEX.md`
 - `docs/RFC-0001-citation-grounded-qa-architecture.md`
+- `docs/RFC-0002-ingestion-and-canonical-schema.md`
+- `docs/RFC-0003-retrieval-and-reranking-strategy.md`
+- `docs/RFC-0004-grounded-answer-generation-and-citation-verification.md`
+- `docs/RFC-0005-hosted-deployment-and-cost-model.md`
+- `docs/RFC-0006-web-ux-and-ask-interaction-model.md`
 
 ## MVP focus
 - arXiv-first ingestion
