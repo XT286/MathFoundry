@@ -237,6 +237,14 @@ Chosen approach: hybrid retrieval + grounded generation.
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Confirm this RFC is accepted before implementing dependent RFCs.
+- [ ] Finalize canonical API contracts (`/search`, `/qa`, `/work/{id}`) and publish schemas.
+- [ ] Lock release-gate metric definitions and measurement scripts.
+- [ ] Create architecture decision log entries for any deviations from this baseline.
+- [ ] Open implementation epics that map 1:1 to RFC-0002 through RFC-0006.
+
 ## 14. Decision record
 
 Pending maintainer approval.

@@ -292,6 +292,15 @@ Chosen: structured generation + explicit verification + abstention.
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Implement `GroundedAnswer` schema validator in API boundary.
+- [ ] Implement claim verifier (`/qa/verify`) with reason codes for failures.
+- [ ] Enforce no-citation-no-claim as a blocking rule in response pipeline.
+- [ ] Implement confidence scoring and abstention behavior in production flow.
+- [ ] Add regression suite with known hallucination-prone math queries.
+- [ ] Add operator tooling to inspect claim -> citation -> passage traces.
+
 ## 16. Decision record
 
 Pending maintainer approval.

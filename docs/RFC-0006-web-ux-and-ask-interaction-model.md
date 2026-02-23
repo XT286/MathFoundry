@@ -272,6 +272,15 @@ Chosen: ask-first, answer-plus-evidence workflow.
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Build Ask, Answer, and Paper Detail screens per Sections 6.1–6.3.
+- [ ] Render `GroundedAnswer` contract with claim-level citation anchors.
+- [ ] Implement evidence drawer and low-confidence/abstention UX paths.
+- [ ] Implement BibTeX/export and source-link actions.
+- [ ] Implement feedback endpoint wiring and event tracking.
+- [ ] Run pilot usability test with 10–20 mathematicians and log top UX defects.
+
 ## 17. Decision record
 
 Pending maintainer approval.

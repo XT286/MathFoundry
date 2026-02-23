@@ -274,6 +274,15 @@ Chosen: transparent hybrid scoring with optional learned rerank upgrades later.
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Implement lexical and vector retrieval channels with shared query-normalization input.
+- [ ] Implement candidate merge (RRF or weighted merge) and lock default in config.
+- [ ] Implement reranker with transparent component scores.
+- [ ] Add citation one-hop expansion with timeout-safe fallback.
+- [ ] Add offline benchmark runner and store baseline vs hybrid comparison outputs.
+- [ ] Add latency/perf dashboards and alerting for SLO breaches.
+
 ## 16. Decision record
 
 Pending maintainer approval.

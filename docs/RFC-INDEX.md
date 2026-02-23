@@ -57,6 +57,15 @@ This index tracks architecture and product RFCs for MathFoundry.
 5. RFC-0005
 6. RFC-0006
 
+## Suggested implementation order (workstream-oriented)
+1. **Data foundation:** RFC-0002
+2. **Retrieval core:** RFC-0003
+3. **Grounded answering:** RFC-0004
+4. **Hosted operations:** RFC-0005
+5. **Web product layer:** RFC-0006
+
+Note: RFC-0001 remains the architecture guardrail and should be treated as the governing contract throughout implementation.
+
 ---
 
 ## Change policy

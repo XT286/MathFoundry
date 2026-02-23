@@ -316,6 +316,15 @@ RFC-0002 is considered implemented for MVP when:
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Ship schema migrations for all core tables listed in Section 6.
+- [ ] Implement `arxiv` ingestion worker with cursor-based incremental sync.
+- [ ] Persist immutable raw payloads and checksums before normalization.
+- [ ] Implement idempotent upsert + dedup path with deterministic merge rules.
+- [ ] Enforce license/provenance record creation as a hard write requirement.
+- [ ] Add replay test (`last 7 days`) to CI/staging to validate no duplicate works.
+
 ## 17. Decision record
 
 Pending maintainer approval.

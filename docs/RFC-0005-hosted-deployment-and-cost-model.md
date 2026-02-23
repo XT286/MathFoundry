@@ -227,6 +227,15 @@ RFC-0005 is implemented for MVP when:
 
 ---
 
+## Implementation checklist (MVP)
+
+- [ ] Provision managed Postgres, vector store, and object storage in one cloud region.
+- [ ] Deploy stateless API + scheduled worker with secrets manager integration.
+- [ ] Configure backups (DB snapshots + object versioning) and restore test procedure.
+- [ ] Implement budget alerts and quota/rate-limit defaults.
+- [ ] Load-test staging and verify query latency + ingestion freshness SLOs.
+- [ ] Document runbooks for outage fallback (lexical-only mode, worker retries).
+
 ## 16. Decision record
 
 Pending maintainer approval.
