@@ -2,12 +2,7 @@
 
 Last updated: 2026-02-22
 
-This document compares two deployment approaches:
-
-1. **Self-host on your own server**
-2. **Managed third-party hosting**
-
-For each approach, it provides requirements and cost breakdown for:
+This document lists deployment options from **lowest cost to highest cost** and provides requirements + rough cost ranges for:
 - **MVP** (algebraic geometry first, low-to-moderate usage)
 - **Full scale** (whole arXiv math focus, higher usage)
 
@@ -16,14 +11,16 @@ For each approach, it provides requirements and cost breakdown for:
 ## Assumptions
 
 - Primary use case: citation-grounded QA over arXiv math papers.
-- LLM inference is external API for quality/stability in both options (initially).
+- LLM inference starts with external API for quality/stability.
 - Costs are rough order-of-magnitude estimates, not quotes.
 
 ---
 
-## Option A — Self-host (your own server)
+## Option 1 (Lowest Cost) — Fully Self-Hosted
 
-## A1) MVP (math.AG first)
+Everything runs on your own server(s): API, worker, Postgres, vector index, and file storage.
+
+## 1.1 MVP (math.AG first)
 
 ### Recommended server requirements
 - CPU: 8 vCPU
@@ -34,51 +31,94 @@ For each approach, it provides requirements and cost breakdown for:
 
 ### Services on server
 - API service (FastAPI)
-- Worker (ingestion/indexing jobs)
+- Worker (ingestion/indexing)
 - Postgres (+ pgvector)
-- Optional: local object store path + periodic backup sync
+- Local file storage for raw payloads and artifacts
+- Basic local monitoring/logging
 
-### MVP monthly cost breakdown (self-host)
+### MVP monthly cost breakdown (fully self-hosted)
 - Server/VPS: ~$40–$150
-- Backups/object storage: ~$5–$30
 - Domain/TLS/misc: ~$0–$10
+- Optional offsite backup (cheap cold storage): ~$0–$20
 - LLM + embeddings API usage: ~$50–$150
-- Monitoring/logging tools (lean): ~$0–$20
 
-**Estimated total (MVP self-host): ~$95–$360 / month**
+**Estimated total (MVP fully self-hosted): ~$90–$330 / month**
 
 ### Notes
-- Lowest infra subscription cost, higher ops burden.
-- You are responsible for patching, backups, uptime, recovery.
+- Lowest recurring infra cost.
+- Highest operations responsibility (patching, backups, recovery, uptime).
 
 ---
 
-## A2) Full scale (whole arXiv math + higher traffic)
+## 1.2 Full scale (whole arXiv math + higher traffic)
 
 ### Recommended server requirements
 - CPU: 16–32 vCPU
 - RAM: 64–128 GB
 - Disk: 2–4 TB NVMe SSD
-- Optional: second node for redundancy/search separation
+- Optional: second node for redundancy/workload split
 
-### Full-scale monthly cost breakdown (self-host)
+### Full-scale monthly cost breakdown (fully self-hosted)
 - Primary server: ~$150–$500
-- Optional secondary/replica: +$100–$400
-- Backups/object storage: ~$20–$100
+- Optional secondary node: +$100–$400
+- Optional offsite backups: ~$20–$100
 - LLM + embeddings API usage: ~$200–$2,000+ (usage dependent)
-- Monitoring/alerting: ~$20–$100
+- Monitoring/alerting (basic-to-moderate): ~$0–$80
 
-**Estimated total (Full scale self-host): ~$390–$3,100+ / month**
-
-### Notes
-- Biggest variable is model/API usage and query volume.
-- Full scale may require splitting services or adding queue/caching layers.
+**Estimated total (Full scale fully self-hosted): ~$350–$3,080+ / month**
 
 ---
 
-## Option B — Managed third-party hosting
+## Option 2 (Mid Cost) — Hybrid Self-Hosted + Managed Components
 
-## B1) MVP (math.AG first)
+Core services run on your server, but one or two reliability-critical pieces are managed (usually object backup and/or vector DB).
+
+## 2.1 MVP (math.AG first)
+
+### Typical stack
+- Self-hosted API + worker + Postgres
+- Managed vector DB **or** managed object backup
+- External LLM/embedding API
+
+### MVP monthly cost breakdown (hybrid)
+- Server/VPS: ~$40–$150
+- Managed component(s): ~$20–$120
+- Domain/TLS/misc: ~$0–$10
+- LLM + embeddings API usage: ~$50–$150
+- Monitoring/logging: ~$0–$30
+
+**Estimated total (MVP hybrid): ~$110–$460 / month**
+
+### Notes
+- Good compromise between cost and ops burden.
+- Easier durability than fully self-hosted.
+
+---
+
+## 2.2 Full scale (whole arXiv math + higher traffic)
+
+### Typical stack
+- Self-hosted app + worker tier
+- Managed vector and/or managed backup/storage
+- Optional managed read replica/search component
+- External LLM/embedding API
+
+### Full-scale monthly cost breakdown (hybrid)
+- Server(s): ~$150–$800
+- Managed components: ~$100–$1,200
+- Backups/storage: ~$20–$150
+- LLM + embeddings API usage: ~$200–$3,000+
+- Monitoring/alerting: ~$20–$120
+
+**Estimated total (Full scale hybrid): ~$490–$5,270+ / month**
+
+---
+
+## Option 3 (Highest Cost) — Fully Managed Third-Party Hosting
+
+Managed Postgres, managed vector DB, managed object storage, managed app hosting, managed observability.
+
+## 3.1 MVP (math.AG first)
 
 ### Recommended managed stack
 - Managed Postgres (Neon/Supabase/RDS)
@@ -87,7 +127,7 @@ For each approach, it provides requirements and cost breakdown for:
 - App hosting (Railway/Fly/Render)
 - External LLM/embedding API
 
-### MVP monthly cost breakdown (managed)
+### MVP monthly cost breakdown (fully managed)
 - Managed Postgres: ~$20–$60
 - Managed vector DB: ~$30–$100
 - Object storage: ~$5–$30
@@ -95,25 +135,21 @@ For each approach, it provides requirements and cost breakdown for:
 - LLM + embeddings API usage: ~$50–$150
 - Monitoring/logging: ~$0–$30
 
-**Estimated total (MVP managed): ~$125–$450 / month**
-
-### Notes
-- Higher infra subscription vs self-host.
-- Much lower operational burden and faster setup.
+**Estimated total (MVP fully managed): ~$125–$450 / month**
 
 ---
 
-## B2) Full scale (whole arXiv math + higher traffic)
+## 3.2 Full scale (whole arXiv math + higher traffic)
 
 ### Recommended managed stack
-- Larger managed Postgres tier (+ read replicas as needed)
+- Larger managed Postgres tier (+ replicas)
 - Dedicated vector cluster
-- Managed search (OpenSearch optional at this stage)
+- Managed search (optional but likely)
 - Dedicated app + worker services
-- Queue/cache (optional but likely)
+- Queue/cache
 - External LLM/embedding API
 
-### Full-scale monthly cost breakdown (managed)
+### Full-scale monthly cost breakdown (fully managed)
 - Managed Postgres: ~$100–$600
 - Managed vector DB: ~$150–$1,000
 - Object storage: ~$20–$150
@@ -122,15 +158,11 @@ For each approach, it provides requirements and cost breakdown for:
 - LLM + embeddings API usage: ~$200–$3,000+
 - Monitoring/logging: ~$30–$200
 
-**Estimated total (Full scale managed): ~$700–$6,450+ / month**
-
-### Notes
-- Easiest to operate at scale, but expensive.
-- Use quotas, caching, and model routing aggressively.
+**Estimated total (Full scale fully managed): ~$700–$6,450+ / month**
 
 ---
 
-## Cost drivers (both options)
+## Cost drivers (all options)
 
 1. LLM token usage (answer generation)
 2. Embedding volume (index growth)
@@ -153,16 +185,15 @@ For each approach, it provides requirements and cost breakdown for:
 
 ## Recommendation by budget band
 
-- **Under $150/mo:** Self-host MVP, strict scope, low traffic expectations.
-- **$150–$300/mo:** Managed MVP (best balance), careful model/caching controls.
-- **$300–$800/mo:** Strong managed pilot with better reliability and UX.
-- **$800+/mo:** Scale-focused architecture and broader corpus depth.
+- **Under $150/mo:** Option 1 (fully self-hosted), strict scope and traffic.
+- **$150–$300/mo:** Option 1 or lean Option 2; careful model/caching controls.
+- **$300–$800/mo:** Option 2 or lean Option 3 for easier operations.
+- **$800+/mo:** Option 3 for scale and team velocity.
 
 ---
 
 ## Immediate fit for current plan
 
 Given target cap of **$300/mo**:
-
-- Best fit: **Managed MVP** with strict controls, or self-host + external models.
+- Best fit: **Option 1 (fully self-hosted)** or a very lean **Option 2 (hybrid)**.
 - Recommended launch scope: **math.AG first**, then expand by measured demand.
