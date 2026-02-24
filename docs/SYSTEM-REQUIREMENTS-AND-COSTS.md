@@ -197,3 +197,56 @@ Managed Postgres, managed vector DB, managed object storage, managed app hosting
 Given target cap of **$300/mo**:
 - Best fit: **Option 1 (fully self-hosted)** or a very lean **Option 2 (hybrid)**.
 - Recommended launch scope: **math.AG first**, then expand by measured demand.
+
+---
+
+## Recommended rollout strategy (MVP -> scale)
+
+### Phase 0 — Private MVP / PoC (now)
+
+**Architecture:** Option 1 (fully self-hosted, one rented server)
+
+**Scope:** arXiv `math.AG` only
+
+**Goals:**
+- End-to-end flow works: Ask -> grounded answer -> citations/evidence
+- Strict abstention when evidence is weak
+- 20-50 benchmark queries for internal evaluation
+- Basic latency/cost logging
+
+**Gate to move to Phase 1:**
+- citation-grounding quality is consistently better than generic baseline,
+- system runs stably for at least 2 weeks,
+- monthly spend remains under cap.
+
+### Phase 1 — Private beta (small invited users)
+
+**Architecture:** Option 2 (hybrid self-hosted + selected managed components)
+
+**Scope:** Gradual expansion beyond `math.AG` based on demand
+
+**Goals:**
+- Improve durability (backups + restore checks)
+- Improve operability (monitoring, alerts, rate limits)
+- Collect structured user feedback from real mathematicians
+
+**Trigger to move to Phase 2:**
+- persistent latency/availability pressure,
+- storage/index growth beyond comfortable self-host limits,
+- recurring ops burden,
+- consistent active usage growth.
+
+### Phase 2 — Public beta / open-source launch
+
+**Architecture:** Option 3 (managed-heavy) or split-service architecture
+
+**Scope:** Wider arXiv math coverage and broader user access
+
+**Goals:**
+- Higher reliability and maintainability at scale
+- Contributor-friendly workflows (docs/CI/staging)
+- Public-facing support and incident handling
+
+### Guiding principle
+
+Start lean and inexpensive, prove trust/value first, and scale infrastructure only when usage and quality metrics justify the additional spend.
