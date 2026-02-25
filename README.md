@@ -26,7 +26,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 - Citation-grounded QA (abstain on weak evidence)
 
 ## Vertical-slice scaffold (in progress)
-- FastAPI endpoints: `/health`, `/search`, `/qa`
+- FastAPI endpoints: `/health`, `/search`, `/qa`, `/qa/verify`
 - Grounded answer contract skeleton
 - arXiv `math.AG` ingestion script (`scripts/ingest_arxiv_math_ag.py`)
 - Self-host deployment stack (`deploy/docker-compose.selfhost.yml`)

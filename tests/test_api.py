@@ -25,3 +25,21 @@ def test_search_returns_demo_for_ag_terms():
     assert r.status_code == 200
     body = r.json()
     assert body["count"] >= 1
+
+
+def test_verify_flags_uncited_claims():
+    payload = {
+        "answer": {
+            "answer_summary": "x",
+            "claims": [{"text": "uncited claim", "supporting_citations": []}],
+            "references": [],
+            "confidence": "low",
+            "limitations": [],
+            "query_refinements": [],
+        }
+    }
+    r = client.post("/qa/verify", json=payload)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is False
+    assert body["invalid_claim_indices"] == [0]

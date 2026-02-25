@@ -29,3 +29,15 @@ class SearchRequest(BaseModel):
 class QARequest(BaseModel):
     query: str
     mode: str = "brief"
+
+
+class VerifyRequest(BaseModel):
+    answer: GroundedAnswer
+
+
+class VerifyResponse(BaseModel):
+    ok: bool
+    verified_claims: int
+    total_claims: int
+    invalid_claim_indices: list[int] = Field(default_factory=list)
+    reasons: list[str] = Field(default_factory=list)

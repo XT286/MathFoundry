@@ -38,6 +38,7 @@ curl http://localhost:8000/health
 ## 5) Run one manual ingest now
 ```bash
 docker compose -f deploy/docker-compose.selfhost.yml exec api python scripts/ingest_arxiv_math_ag.py
+docker compose -f deploy/docker-compose.selfhost.yml exec api python scripts/build_lexical_index.py
 ```
 
 ## 6) Storage control

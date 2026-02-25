@@ -1,4 +1,4 @@
-from .models import Claim, Citation, GroundedAnswer
+from .models import Claim, Citation, GroundedAnswer, VerifyResponse
 
 
 def answer_with_grounding(query: str, candidates: list[dict]) -> GroundedAnswer:
@@ -26,4 +26,31 @@ def answer_with_grounding(query: str, candidates: list[dict]) -> GroundedAnswer:
         confidence="low",
         limitations=["MVP scaffold answer; full passage-level verification not yet enabled."],
         query_refinements=["Ask for theorem-level comparison once ingestion and passage indexing expands."],
+    )
+
+
+def verify_grounded_answer(answer: GroundedAnswer) -> VerifyResponse:
+    invalid: list[int] = []
+    reasons: list[str] = []
+
+    for i, c in enumerate(answer.claims):
+        if not c.supporting_citations:
+            invalid.append(i)
+            reasons.append(f"claim[{i}] has no supporting citations")
+            continue
+        for cit in c.supporting_citations:
+            if not cit.work_id:
+                invalid.append(i)
+                reasons.append(f"claim[{i}] has invalid citation work_id")
+                break
+
+    total = len(answer.claims)
+    verified = total - len(set(invalid))
+    ok = len(invalid) == 0
+    return VerifyResponse(
+        ok=ok,
+        verified_claims=max(0, verified),
+        total_claims=total,
+        invalid_claim_indices=sorted(set(invalid)),
+        reasons=reasons,
     )
