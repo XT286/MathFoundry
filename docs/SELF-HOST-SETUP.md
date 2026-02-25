@@ -15,8 +15,15 @@ cp .env.example .env
 
 Edit `.env` as needed:
 - `MATHFOUNDRY_ARXIV_CATEGORY=math.AG`
+- `MATHFOUNDRY_STORAGE_BUDGET_GB=400`
 - `MATHFOUNDRY_MAX_RAW_FILES=200`
 - `MATHFOUNDRY_MAX_RESULTS_PER_INGEST=100`
+
+Borrowed-server hygiene rules:
+- Keep all project files under one directory (no system-wide clutter).
+- Keep data only under `./data`.
+- Do not run unrelated services on this host.
+- Use `docker compose ... down` when paused.
 
 ## 3) Start stack
 ```bash
