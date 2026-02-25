@@ -11,8 +11,8 @@ def _tokenize(text: str) -> list[str]:
     return [t for t in re.findall(r"[a-zA-Z0-9*\-]+", text.lower()) if len(t) >= 2]
 
 
-def _score(title: str, summary: str, tokens: list[str]) -> float:
-    hay = f"{title} {summary}".lower()
+def _score(text: str, tokens: list[str]) -> float:
+    hay = text.lower()
     if not tokens:
         return 0.0
     hits = 0
@@ -34,30 +34,58 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
 
-    # broad pull then local scoring for deterministic lightweight lexical behavior
     rows = conn.execute(
-        "SELECT work_id,title,summary,category,published,updated FROM papers ORDER BY updated DESC LIMIT 1200"
+        """
+        SELECT p.work_id, p.title, p.summary, p.category, p.published, p.updated,
+               ps.text AS passage_text, ps.block_type, ps.math_density
+        FROM papers p
+        LEFT JOIN passages ps ON ps.work_id = p.work_id
+        ORDER BY p.updated DESC
+        LIMIT 3000
+        """
     ).fetchall()
     conn.close()
 
-    scored = []
+    best_by_work: dict[str, dict] = {}
     for r in rows:
-        s = _score(r["title"] or "", r["summary"] or "", tokens)
-        if s > 0:
-            scored.append(
-                {
-                    "work_id": r["work_id"],
-                    "title": r["title"],
-                    "summary": (r["summary"] or "")[:500],
-                    "category": r["category"],
-                    "published": r["published"],
-                    "updated": r["updated"],
-                    "score": round(float(s), 4),
-                    "source": "arxiv",
-                }
-            )
+        work_id = r["work_id"]
+        title = r["title"] or ""
+        summary = r["summary"] or ""
+        ptext = r["passage_text"] or ""
+        block = (r["block_type"] or "paragraph").lower()
+        density = float(r["math_density"] or 0.0)
 
-    scored.sort(key=lambda x: x["score"], reverse=True)
+        text_score = _score(f"{title} {summary} {ptext}", tokens)
+        if text_score <= 0:
+            continue
+
+        # Math-aware boost: theorem/definition/proof-like passages and denser symbolic text.
+        block_boost = 0.0
+        if block in {"theorem", "definition", "proof"}:
+            block_boost = 0.12
+        elif block == "example":
+            block_boost = 0.05
+
+        density_boost = min(0.15, density * 0.8)
+        final = min(1.0, text_score + block_boost + density_boost)
+
+        current = best_by_work.get(work_id)
+        candidate = {
+            "work_id": work_id,
+            "title": title,
+            "summary": summary[:500],
+            "category": r["category"],
+            "published": r["published"],
+            "updated": r["updated"],
+            "score": round(final, 4),
+            "source": "arxiv",
+            "top_block_type": block,
+            "math_density": round(density, 4),
+        }
+        if current is None or candidate["score"] > current["score"]:
+            best_by_work[work_id] = candidate
+
+    scored = sorted(best_by_work.values(), key=lambda x: x["score"], reverse=True)
     return scored[: max(1, req.limit)]
 
 
@@ -79,6 +107,8 @@ def search(req: SearchRequest) -> list[dict]:
                 "updated": None,
                 "score": 0.91,
                 "source": "arxiv",
+                "top_block_type": "paragraph",
+                "math_density": 0.0,
             }
         ]
     return []

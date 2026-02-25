@@ -19,6 +19,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 - `docs/RFC-0005-hosted-deployment-and-cost-model.md`
 - `docs/RFC-0006-web-ux-and-ask-interaction-model.md`
 - `docs/SELF-HOST-SETUP.md`
+- `docs/LEAN-EVALUATION.md`
 
 ## MVP focus
 - arXiv-first ingestion (initial scope: `math.AG`)

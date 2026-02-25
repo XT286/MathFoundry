@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -7,6 +8,12 @@ import xml.etree.ElementTree as ET
 from .config import CONFIG
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
+_BLOCK_MARKERS = {
+    "theorem": ["theorem", "lemma", "proposition", "corollary"],
+    "definition": ["definition", "notion", "denote"],
+    "proof": ["proof", "sketch", "argument"],
+    "example": ["example", "counterexample"],
+}
 
 
 def db_path() -> Path:
@@ -31,6 +38,24 @@ def ensure_db() -> sqlite3.Connection:
         """
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_category ON papers(category)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS passages (
+          passage_id TEXT PRIMARY KEY,
+          work_id TEXT NOT NULL,
+          chunk_index INTEGER NOT NULL,
+          section_label TEXT,
+          block_type TEXT,
+          text TEXT NOT NULL,
+          math_density REAL NOT NULL,
+          token_est INTEGER NOT NULL,
+          FOREIGN KEY(work_id) REFERENCES papers(work_id)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_passages_work ON passages(work_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_passages_block ON passages(block_type)")
     conn.commit()
     return conn
 
@@ -51,6 +76,7 @@ def parse_arxiv_atom(xml_text: str) -> list[dict]:
             if term and term.startswith("math."):
                 primary_cat = term
                 break
+
         work_id = id_text.replace("http://arxiv.org/abs/", "arxiv:").replace("https://arxiv.org/abs/", "arxiv:")
         if work_id and title:
             out.append(
@@ -66,11 +92,77 @@ def parse_arxiv_atom(xml_text: str) -> list[dict]:
     return out
 
 
+def _estimate_tokens(text: str) -> int:
+    return max(1, len(text.split()))
+
+
+def _math_density(text: str) -> float:
+    if not text:
+        return 0.0
+    mathish = re.findall(r"[\\$^_{}]|\\[a-zA-Z]+|\b[A-Z][a-zA-Z]?\b", text)
+    return round(min(1.0, len(mathish) / max(1, len(text))), 4)
+
+
+def _detect_block_type(text: str) -> str:
+    t = text.lower()
+    for block, markers in _BLOCK_MARKERS.items():
+        if any(m in t for m in markers):
+            return block
+    return "paragraph"
+
+
+def _split_passages(summary: str, work_id: str) -> list[dict]:
+    # Sentence-based chunking with lightweight math-aware metadata.
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", summary) if p.strip()]
+    if not parts:
+        parts = [summary.strip()] if summary.strip() else []
+
+    chunks: list[dict] = []
+    current = ""
+    chunk_index = 0
+    for s in parts:
+        if len((current + " " + s).strip()) > 900 and current:
+            text = current.strip()
+            chunks.append(
+                {
+                    "passage_id": f"{work_id}#p{chunk_index}",
+                    "work_id": work_id,
+                    "chunk_index": chunk_index,
+                    "section_label": "abstract",
+                    "block_type": _detect_block_type(text),
+                    "text": text,
+                    "math_density": _math_density(text),
+                    "token_est": _estimate_tokens(text),
+                }
+            )
+            chunk_index += 1
+            current = s
+        else:
+            current = (current + " " + s).strip()
+
+    if current:
+        text = current.strip()
+        chunks.append(
+            {
+                "passage_id": f"{work_id}#p{chunk_index}",
+                "work_id": work_id,
+                "chunk_index": chunk_index,
+                "section_label": "abstract",
+                "block_type": _detect_block_type(text),
+                "text": text,
+                "math_density": _math_density(text),
+                "token_est": _estimate_tokens(text),
+            }
+        )
+    return chunks
+
+
 def index_raw_file(xml_file: Path) -> int:
     text = xml_file.read_text(encoding="utf-8")
     rows = parse_arxiv_atom(text)
     if not rows:
         return 0
+
     conn = ensure_db()
     with conn:
         conn.executemany(
@@ -87,6 +179,19 @@ def index_raw_file(xml_file: Path) -> int:
             """,
             [{**r, "source_file": str(xml_file)} for r in rows],
         )
+
+        for r in rows:
+            conn.execute("DELETE FROM passages WHERE work_id = ?", (r["work_id"],))
+            passages = _split_passages(r.get("summary", ""), r["work_id"])
+            if passages:
+                conn.executemany(
+                    """
+                    INSERT INTO passages(passage_id, work_id, chunk_index, section_label, block_type, text, math_density, token_est)
+                    VALUES(:passage_id,:work_id,:chunk_index,:section_label,:block_type,:text,:math_density,:token_est)
+                    """,
+                    passages,
+                )
+
     conn.close()
     return len(rows)
 
