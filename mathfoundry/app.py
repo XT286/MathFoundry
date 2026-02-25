@@ -4,8 +4,10 @@ from .config import CONFIG
 from .grounding import answer_with_grounding, verify_grounded_answer
 from .models import QARequest, SearchRequest, VerifyRequest
 from .retrieval import search
+from .web import router as web_router
 
 app = FastAPI(title="MathFoundry", version="0.1.0")
+app.include_router(web_router)
 
 
 @app.get("/health")

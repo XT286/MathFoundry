@@ -42,6 +42,9 @@ pip install -e .[dev]
 uvicorn mathfoundry.app:app --reload
 ```
 
+Open web app:
+- http://localhost:8000/
+
 Run tests:
 ```bash
 pytest
