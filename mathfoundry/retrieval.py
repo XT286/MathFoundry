@@ -56,7 +56,7 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
         density = float(r["math_density"] or 0.0)
 
         text_score = _score(f"{title} {summary} {ptext}", tokens)
-        if text_score <= 0:
+        if text_score < 0.5:
             continue
 
         # Math-aware boost: theorem/definition/proof-like passages and denser symbolic text.
