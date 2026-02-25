@@ -31,7 +31,21 @@ def search_endpoint(req: SearchRequest) -> dict:
 def qa_endpoint(req: QARequest) -> dict:
     candidates = search(SearchRequest(query=req.query, limit=10))
     grounded = answer_with_grounding(req.query, candidates)
-    return grounded.model_dump()
+
+    verification = verify_grounded_answer(grounded)
+    if verification.must_abstain:
+        grounded.confidence = "insufficient_evidence"
+        if "Verification threshold not met." not in grounded.limitations:
+            grounded.limitations.append("Verification threshold not met.")
+        if not grounded.query_refinements:
+            grounded.query_refinements = [
+                "Add a specific theorem/object or author name.",
+                "Narrow scope by subtopic and timeframe.",
+            ]
+
+    payload = grounded.model_dump()
+    payload["verification"] = verification.model_dump()
+    return payload
 
 
 @app.post("/qa/verify")

@@ -41,3 +41,6 @@ class VerifyResponse(BaseModel):
     total_claims: int
     invalid_claim_indices: list[int] = Field(default_factory=list)
     reasons: list[str] = Field(default_factory=list)
+    coverage_ratio: float = 0.0
+    suggested_confidence: str = "insufficient_evidence"
+    must_abstain: bool = True

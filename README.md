@@ -27,7 +27,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 
 ## Vertical-slice scaffold (in progress)
 - FastAPI endpoints: `/health`, `/search`, `/qa`, `/qa/verify`
-- Grounded answer contract skeleton
+- Grounded answer contract + initial verification layer (`/qa/verify`)
 - arXiv `math.AG` ingestion script (`scripts/ingest_arxiv_math_ag.py`)
 - Self-host deployment stack (`deploy/docker-compose.selfhost.yml`)
 - Initial API tests
