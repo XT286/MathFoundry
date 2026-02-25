@@ -15,6 +15,9 @@ def health() -> dict:
         "budget_cap_usd": CONFIG.monthly_budget_usd,
         "primary_category": CONFIG.arxiv_primary_category,
         "strict_abstain": CONFIG.strict_abstain,
+        "max_raw_files": CONFIG.max_raw_files,
+        "max_results_per_ingest": CONFIG.max_results_per_ingest,
+        "data_dir": CONFIG.data_dir,
     }
 
 

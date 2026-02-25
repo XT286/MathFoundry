@@ -13,6 +13,7 @@ venv/
 # Local env
 .env
 .env.*
+!.env.example
 
 # Data / indexes / logs
 data/

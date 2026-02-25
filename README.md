@@ -18,6 +18,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 - `docs/RFC-0004-grounded-answer-generation-and-citation-verification.md`
 - `docs/RFC-0005-hosted-deployment-and-cost-model.md`
 - `docs/RFC-0006-web-ux-and-ask-interaction-model.md`
+- `docs/SELF-HOST-SETUP.md`
 
 ## MVP focus
 - arXiv-first ingestion (initial scope: `math.AG`)
@@ -28,6 +29,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 - FastAPI endpoints: `/health`, `/search`, `/qa`
 - Grounded answer contract skeleton
 - arXiv `math.AG` ingestion script (`scripts/ingest_arxiv_math_ag.py`)
+- Self-host deployment stack (`deploy/docker-compose.selfhost.yml`)
 - Initial API tests
 
 ## Run locally
