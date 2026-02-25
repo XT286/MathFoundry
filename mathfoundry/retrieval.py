@@ -5,6 +5,7 @@ import sqlite3
 
 from .indexing import db_path
 from .models import SearchRequest
+from .subareas import detect_ag_subareas
 
 
 def _tokenize(text: str) -> list[str]:
@@ -33,17 +34,30 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
 
     conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
+    query_tags = set(detect_ag_subareas(req.query))
 
-    rows = conn.execute(
-        """
-        SELECT p.work_id, p.title, p.summary, p.category, p.published, p.updated,
-               ps.text AS passage_text, ps.block_type, ps.math_density
-        FROM papers p
-        LEFT JOIN passages ps ON ps.work_id = p.work_id
-        ORDER BY p.updated DESC
-        LIMIT 3000
-        """
-    ).fetchall()
+    try:
+        rows = conn.execute(
+            """
+            SELECT p.work_id, p.title, p.summary, p.category, p.ag_subareas, p.published, p.updated,
+                   ps.text AS passage_text, ps.block_type, ps.math_density
+            FROM papers p
+            LEFT JOIN passages ps ON ps.work_id = p.work_id
+            ORDER BY p.updated DESC
+            LIMIT 3000
+            """
+        ).fetchall()
+    except sqlite3.OperationalError:
+        rows = conn.execute(
+            """
+            SELECT p.work_id, p.title, p.summary, p.category, '' AS ag_subareas, p.published, p.updated,
+                   ps.text AS passage_text, ps.block_type, ps.math_density
+            FROM papers p
+            LEFT JOIN passages ps ON ps.work_id = p.work_id
+            ORDER BY p.updated DESC
+            LIMIT 3000
+            """
+        ).fetchall()
     conn.close()
 
     best_by_work: dict[str, dict] = {}
@@ -54,6 +68,7 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
         ptext = r["passage_text"] or ""
         block = (r["block_type"] or "paragraph").lower()
         density = float(r["math_density"] or 0.0)
+        row_tags = set([t for t in (r["ag_subareas"] or "").split(",") if t])
 
         text_score = _score(f"{title} {summary} {ptext}", tokens)
         if text_score < 0.5:
@@ -67,7 +82,13 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
             block_boost = 0.05
 
         density_boost = min(0.15, density * 0.8)
-        final = min(1.0, text_score + block_boost + density_boost)
+        subarea_boost = 0.0
+        if query_tags and row_tags:
+            overlap = len(query_tags & row_tags)
+            if overlap > 0:
+                subarea_boost = min(0.12, 0.05 * overlap)
+
+        final = min(1.0, text_score + block_boost + density_boost + subarea_boost)
 
         current = best_by_work.get(work_id)
         candidate = {
@@ -77,6 +98,7 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
             "category": r["category"],
             "published": r["published"],
             "updated": r["updated"],
+            "ag_subareas": sorted(row_tags),
             "score": round(final, 4),
             "source": "arxiv",
             "top_block_type": block,

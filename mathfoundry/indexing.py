@@ -6,6 +6,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 from .config import CONFIG
+from .subareas import detect_ag_subareas
 
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 _BLOCK_MARKERS = {
@@ -31,6 +32,7 @@ def ensure_db() -> sqlite3.Connection:
           title TEXT NOT NULL,
           summary TEXT,
           category TEXT,
+          ag_subareas TEXT,
           published TEXT,
           updated TEXT,
           source_file TEXT
@@ -38,6 +40,11 @@ def ensure_db() -> sqlite3.Connection:
         """
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_papers_category ON papers(category)")
+    # lightweight migration for existing local DBs
+    try:
+        conn.execute("ALTER TABLE papers ADD COLUMN ag_subareas TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     conn.execute(
         """
@@ -165,19 +172,25 @@ def index_raw_file(xml_file: Path) -> int:
 
     conn = ensure_db()
     with conn:
+        payload_rows = []
+        for r in rows:
+            tags = detect_ag_subareas(f"{r.get('title','')} {r.get('summary','')}") if r.get("category") == "math.AG" else []
+            payload_rows.append({**r, "source_file": str(xml_file), "ag_subareas": ",".join(tags)})
+
         conn.executemany(
             """
-            INSERT INTO papers(work_id, title, summary, category, published, updated, source_file)
-            VALUES(:work_id,:title,:summary,:category,:published,:updated,:source_file)
+            INSERT INTO papers(work_id, title, summary, category, ag_subareas, published, updated, source_file)
+            VALUES(:work_id,:title,:summary,:category,:ag_subareas,:published,:updated,:source_file)
             ON CONFLICT(work_id) DO UPDATE SET
               title=excluded.title,
               summary=excluded.summary,
               category=excluded.category,
+              ag_subareas=excluded.ag_subareas,
               published=excluded.published,
               updated=excluded.updated,
               source_file=excluded.source_file
             """,
-            [{**r, "source_file": str(xml_file)} for r in rows],
+            payload_rows,
         )
 
         for r in rows:

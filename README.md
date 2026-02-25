@@ -20,6 +20,7 @@ MathFoundry is not just a reference finder and not plain RAG.
 - `docs/RFC-0006-web-ux-and-ask-interaction-model.md`
 - `docs/SELF-HOST-SETUP.md`
 - `docs/WEB-APP-AND-LOCAL-FLOW.md`
+- `docs/AG-SUBAREA-TAXONOMY-v1.md`
 - `docs/LEAN-EVALUATION.md`
 - `docs/EVALUATION-PLAN.md`
 

@@ -132,7 +132,7 @@ Fields:
 - `work_id`, `author_id`, `position`.
 
 ### `subject_tags`
-- `id`, `tag_type` (`arxiv_category`, `msc`), `tag_value`, `label`.
+- `id`, `tag_type` (`arxiv_category`, `msc`, `ag_subarea`), `tag_value`, `label`.
 
 ### `work_subject_tags`
 - `work_id`, `subject_tag_id`, `is_primary`.
@@ -219,6 +219,8 @@ Re-run guarantees:
 ---
 
 ## 9. Passage chunking policy (MVP)
+
+Additionally, AG-focused subarea tags are inferred from title+abstract using a lightweight keyword taxonomy (e.g., birational geometry, moduli, derived AG, arithmetic geometry). These tags are stored and used for retrieval boosts.
 
 Chunking defaults:
 
