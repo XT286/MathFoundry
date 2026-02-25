@@ -1,0 +1,5 @@
+{"id":"q001","branch":"algebra","intent":"foundational_refs","query":"Foundational references for étale cohomology for beginners with strong algebra background."}
+{"id":"q002","branch":"geometry","intent":"theorem_lookup","query":"Key papers related to the proof strategy of the Weil conjectures and follow-up expositions."}
+{"id":"q003","branch":"topology","intent":"compare","query":"Compare major approaches to 3-manifold geometrization in terms of prerequisites and techniques."}
+{"id":"q004","branch":"analysis","intent":"prerequisites","query":"What should I read before studying modern harmonic analysis on Lie groups?"}
+{"id":"q005","branch":"algebraic_geometry","intent":"theorem_lookup","query":"Important references around resolution of singularities in characteristic zero and known boundaries in positive characteristic."}
