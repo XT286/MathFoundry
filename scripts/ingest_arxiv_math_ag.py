@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, UTC
 from pathlib import Path
 
 import httpx
 
 from mathfoundry.config import CONFIG
 
-ARXIV_API = "http://export.arxiv.org/api/query"
+ARXIV_API = "https://export.arxiv.org/api/query"
 
 
 def fetch_category(limit: int) -> str:
@@ -23,7 +23,7 @@ def fetch_category(limit: int) -> str:
         "sortOrder": "descending",
     }
     url = f"{ARXIV_API}?{urllib.parse.urlencode(params)}"
-    with httpx.Client(timeout=30.0) as c:
+    with httpx.Client(timeout=30.0, follow_redirects=True) as c:
         r = c.get(url)
         r.raise_for_status()
         return r.text
@@ -43,7 +43,7 @@ def main() -> None:
 
     out_dir = Path(CONFIG.data_dir) / "raw"
     out_dir.mkdir(parents=True, exist_ok=True)
-    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     out_file = out_dir / f"arxiv_{CONFIG.arxiv_primary_category.replace('.', '_')}_{ts}.xml"
     out_file.write_text(raw, encoding="utf-8")
 
