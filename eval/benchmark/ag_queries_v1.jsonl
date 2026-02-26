@@ -1,0 +1,30 @@
+{"id": "ag001", "branch": "algebraic_geometry", "intent": "definition", "query": "What is the derived category of coherent sheaves, and why is it useful in algebraic geometry?"}
+{"id": "ag002", "branch": "algebraic_geometry", "intent": "definition", "query": "Explain the role of moduli stacks versus moduli schemes for vector bundles on curves."}
+{"id": "ag003", "branch": "algebraic_geometry", "intent": "foundational_refs", "query": "Foundational references for étale cohomology aimed at algebraic geometers."}
+{"id": "ag004", "branch": "algebraic_geometry", "intent": "foundational_refs", "query": "Core references for intersection theory and Chow groups for a first serious reading plan."}
+{"id": "ag005", "branch": "algebraic_geometry", "intent": "compare", "query": "Compare de Rham, étale, and crystalline cohomology in typical use cases."}
+{"id": "ag006", "branch": "algebraic_geometry", "intent": "theorem_lookup", "query": "Key references around the Weil conjectures proof strategy and later expositions."}
+{"id": "ag007", "branch": "algebraic_geometry", "intent": "theorem_lookup", "query": "References for the Grothendieck-Riemann-Roch theorem and modern treatments."}
+{"id": "ag008", "branch": "algebraic_geometry", "intent": "theorem_lookup", "query": "Important papers/books on minimal model program in algebraic geometry."}
+{"id": "ag009", "branch": "algebraic_geometry", "intent": "theorem_lookup", "query": "References on resolution of singularities in characteristic zero and current limits in positive characteristic."}
+{"id": "ag010", "branch": "algebraic_geometry", "intent": "prerequisites", "query": "What should I read before studying derived algebraic geometry from an AG background?"}
+{"id": "ag011", "branch": "algebraic_geometry", "intent": "prerequisites", "query": "Reading prerequisites for learning moduli of sheaves and Bridgeland stability."}
+{"id": "ag012", "branch": "algebraic_geometry", "intent": "compare", "query": "Compare toric geometry and tropical geometry as tools for computations and degeneration arguments."}
+{"id": "ag013", "branch": "algebraic_geometry", "intent": "survey", "query": "Survey references for abelian varieties and polarizations, beginner-to-intermediate path."}
+{"id": "ag014", "branch": "algebraic_geometry", "intent": "survey", "query": "What are standard references for Hodge theory used by algebraic geometers?"}
+{"id": "ag015", "branch": "algebraic_geometry", "intent": "object_focus", "query": "Best references for Picard schemes and Néron models."}
+{"id": "ag016", "branch": "algebraic_geometry", "intent": "object_focus", "query": "References focused on Hilbert schemes and Quot schemes in moduli problems."}
+{"id": "ag017", "branch": "algebraic_geometry", "intent": "object_focus", "query": "References for algebraic stacks with emphasis on deformation theory."}
+{"id": "ag018", "branch": "algebraic_geometry", "intent": "object_focus", "query": "References on perverse sheaves and their AG applications."}
+{"id": "ag019", "branch": "algebraic_geometry", "intent": "method", "query": "How is vanishing theorems machinery used in birational geometry? Key references."}
+{"id": "ag020", "branch": "algebraic_geometry", "intent": "method", "query": "References for geometric invariant theory and moduli construction workflows."}
+{"id": "ag021", "branch": "algebraic_geometry", "intent": "method", "query": "References for using spectral sequences in algebraic geometry practice."}
+{"id": "ag022", "branch": "algebraic_geometry", "intent": "method", "query": "References on deformation-obstruction theory for moduli problems."}
+{"id": "ag023", "branch": "algebraic_geometry", "intent": "historical", "query": "Classic papers that shaped modern scheme theory after Grothendieck."}
+{"id": "ag024", "branch": "algebraic_geometry", "intent": "historical", "query": "Historical-to-modern reading path for motives and motivic cohomology."}
+{"id": "ag025", "branch": "algebraic_geometry", "intent": "advanced", "query": "Key entry points into p-adic Hodge theory for algebraic geometers."}
+{"id": "ag026", "branch": "algebraic_geometry", "intent": "advanced", "query": "References connecting homological mirror symmetry and algebraic geometry."}
+{"id": "ag027", "branch": "algebraic_geometry", "intent": "advanced", "query": "References for noncommutative algebraic geometry and semiorthogonal decompositions."}
+{"id": "ag028", "branch": "algebraic_geometry", "intent": "edge_case", "query": "I need one citation proving every smooth projective variety over any field is rational. Is this true?"}
+{"id": "ag029", "branch": "algebraic_geometry", "intent": "edge_case", "query": "Is there a complete classification of all singularities in positive characteristic with one canonical reference?"}
+{"id": "ag030", "branch": "algebraic_geometry", "intent": "edge_case", "query": "Give definitive references that settle all open problems in the minimal model program."}
