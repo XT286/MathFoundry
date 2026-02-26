@@ -8,6 +8,8 @@ WORKDIR /app
 COPY pyproject.toml /app/
 COPY mathfoundry /app/mathfoundry
 COPY scripts /app/scripts
+COPY queries /app/queries
+COPY eval /app/eval
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .
