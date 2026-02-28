@@ -1,0 +1,15 @@
+{
+  "s0_pure_llm": {
+    "count": 0
+  },
+  "s1_plain_rag": {
+    "count": 0
+  },
+  "s2_rag_verify": {
+    "count": 30,
+    "mean_correctness": null,
+    "mean_citation_precision": null,
+    "overclaim_rate": 0.0,
+    "abstention_correct_rate": 0.0
+  }
+}
