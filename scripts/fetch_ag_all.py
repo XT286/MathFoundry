@@ -98,7 +98,7 @@ def main() -> None:
         start = int(ck.get("next_start", 0))
         total_available = int(ck.get("total_available", 0))
         kept = int(ck.get("kept", 0))
-        pages_done = int(ck.get("pages_done", 0))
+        pages_done = int(ck.get("pages_done", 0))  # lifetime counter
         mode = "a"
     else:
         first = fetch_feed(start=0, page_size=1, query=query)
@@ -108,8 +108,10 @@ def main() -> None:
         pages_done = 0
         mode = "w"
 
+    pages_done_this_run = 0
+
     with out_path.open(mode, encoding="utf-8") as f:
-        while start < total_available and pages_done < max_pages:
+        while start < total_available and pages_done_this_run < max_pages:
             data_bytes = dir_size_bytes(Path("data"))
             if data_bytes >= int(storage_budget_gb * stop_ratio * (1024**3)):
                 print(json.dumps({"event": "stop_storage_guard", "data_bytes": data_bytes}))
@@ -125,6 +127,7 @@ def main() -> None:
                 kept += 1
 
             pages_done += 1
+            pages_done_this_run += 1
             start += page_size
 
             if pages_done % checkpoint_every == 0:
@@ -149,6 +152,7 @@ def main() -> None:
         "next_start": start,
         "kept": kept,
         "pages_done": pages_done,
+        "pages_done_this_run": pages_done_this_run,
         "output": str(out_path),
         "checkpoint": str(ck_path),
     }
