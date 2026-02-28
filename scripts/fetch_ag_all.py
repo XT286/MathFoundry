@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import time
 import urllib.parse
 import xml.etree.ElementTree as ET
@@ -29,16 +30,33 @@ def fetch_feed(start: int, page_size: int, query: str) -> str:
     url = f"{ARXIV_API}?{urllib.parse.urlencode(params)}"
 
     delay = 5.0
-    for _ in range(30):
-        with httpx.Client(timeout=90.0, follow_redirects=True, headers={"User-Agent": "MathFoundry/0.1 (full AG ingest)"}) as c:
-            r = c.get(url)
-            if r.status_code == 429:
-                time.sleep(delay)
-                delay = min(delay * 1.5, 180)
+    with httpx.Client(timeout=90.0, follow_redirects=True, headers={"User-Agent": "MathFoundry/0.1 (full AG ingest)"}) as c:
+        for attempt in range(1, 41):
+            try:
+                r = c.get(url)
+            except httpx.HTTPError:
+                # Transport/timeout/etc.
+                jitter = random.uniform(0.0, 2.0)
+                time.sleep(delay + jitter)
+                delay = min(delay * 1.5, 240)
                 continue
+
+            if r.status_code == 429:
+                jitter = random.uniform(0.0, 2.0)
+                time.sleep(delay + jitter)
+                delay = min(delay * 1.5, 240)
+                continue
+
+            if 500 <= r.status_code <= 599:
+                jitter = random.uniform(0.0, 2.0)
+                time.sleep(delay + jitter)
+                delay = min(delay * 1.4, 240)
+                continue
+
             r.raise_for_status()
             return r.text
-    raise RuntimeError("rate-limited repeatedly; retry later")
+
+    raise RuntimeError(f"fetch failed after retries (start={start}, page_size={page_size})")
 
 
 def parse_total(xml_text: str) -> int:
@@ -109,6 +127,7 @@ def main() -> None:
         mode = "w"
 
     pages_done_this_run = 0
+    current_page_size = page_size
 
     with out_path.open(mode, encoding="utf-8") as f:
         while start < total_available and pages_done_this_run < max_pages:
@@ -117,7 +136,15 @@ def main() -> None:
                 print(json.dumps({"event": "stop_storage_guard", "data_bytes": data_bytes}))
                 break
 
-            xml = fetch_feed(start=start, page_size=page_size, query=query)
+            try:
+                xml = fetch_feed(start=start, page_size=current_page_size, query=query)
+            except RuntimeError as e:
+                if current_page_size > 50:
+                    current_page_size = max(50, current_page_size // 2)
+                    print(json.dumps({"event": "page_size_reduce_on_error", "start": start, "new_page_size": current_page_size, "reason": str(e)}))
+                    continue
+                raise
+
             entries = parse_entries(xml)
             if not entries:
                 break
@@ -128,7 +155,11 @@ def main() -> None:
 
             pages_done += 1
             pages_done_this_run += 1
-            start += page_size
+            start += current_page_size
+
+            if current_page_size < page_size and pages_done_this_run % 10 == 0:
+                current_page_size = min(page_size, current_page_size * 2)
+                print(json.dumps({"event": "page_size_restore", "start": start, "page_size": current_page_size}))
 
             if pages_done % checkpoint_every == 0:
                 ck = {
@@ -137,6 +168,7 @@ def main() -> None:
                     "next_start": start,
                     "kept": kept,
                     "pages_done": pages_done,
+                    "current_page_size": current_page_size,
                     "updated_at": datetime.now(UTC).isoformat(),
                     "data_dir_bytes": dir_size_bytes(Path("data")),
                     "output": str(out_path),
@@ -153,6 +185,7 @@ def main() -> None:
         "kept": kept,
         "pages_done": pages_done,
         "pages_done_this_run": pages_done_this_run,
+        "current_page_size": current_page_size,
         "output": str(out_path),
         "checkpoint": str(ck_path),
     }
