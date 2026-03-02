@@ -45,6 +45,19 @@
 - **15 files changed**, ~255 lines of redundant code eliminated
 - All 9 tests pass
 
+## Phase B (cont'd): Server-Local Sync
+
+### Sync Actions Performed
+1. **GitHub → Server**: `git pull` on server; cleaned 12 stale untracked files that conflicted with tracked versions
+2. **Server → Local**: Copied topic JSONL data (10k papers from `ag_all_math_ag.jsonl` + focus subsets); copied `mathfoundry.db` (3,052 papers, 3,892 passages)
+3. **OpenAI key → Server `.env`**: Added `OPENAI_API_KEY` to server's `.env`; rebuilt & restarted Docker containers (api + worker)
+4. **Nginx fix**: Restarted `mathfoundry-web` to refresh DNS after api container recreation
+5. **Connect timeout fix**: OpenAI calls now use 10s connect timeout (was 120s) — server can't reach OpenAI (China network), so it falls back to scaffold mode quickly instead of hanging 2 min
+
+### Known Limitation
+- Server (China-hosted at 61.177.91.130) cannot reach `api.openai.com` — OpenAI QA falls back to scaffold mode on the server
+- Full LLM-grounded QA works from local (macOS) where the API is reachable
+
 ## Server vs Local Relationship
 - Both are clones of `github.com/XT286/MathFoundry`
 - Local was 7 commits ahead of server before this sync

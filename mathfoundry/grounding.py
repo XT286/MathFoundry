@@ -66,7 +66,7 @@ def _call_openai(query: str, context: str) -> dict:
             "Authorization": f"Bearer {CONFIG.openai_api_key}",
             "Content-Type": "application/json",
         },
-        timeout=120.0,
+        timeout=httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=10.0),
     ) as client:
         r = client.post(
             "https://api.openai.com/v1/responses",
