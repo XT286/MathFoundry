@@ -16,6 +16,8 @@ class ProjectConfig:
     max_raw_files: int = int(os.getenv("MATHFOUNDRY_MAX_RAW_FILES", "200"))
     max_results_per_ingest: int = int(os.getenv("MATHFOUNDRY_MAX_RESULTS_PER_INGEST", "100"))
     data_dir: str = os.getenv("MATHFOUNDRY_DATA_DIR", "./data")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    openai_model: str = os.getenv("MATHFOUNDRY_OPENAI_MODEL", "gpt-4.1")
 
 
 CONFIG = ProjectConfig()

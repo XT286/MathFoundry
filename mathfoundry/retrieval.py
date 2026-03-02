@@ -111,26 +111,6 @@ def _search_sqlite(req: SearchRequest) -> list[dict]:
     return scored[: max(1, req.limit)]
 
 
-# MVP retrieval: prefer local lexical index; fallback demo while index is empty.
 def search(req: SearchRequest) -> list[dict]:
-    real = _search_sqlite(req)
-    if real:
-        return real
-
-    q = req.query.lower()
-    if "algebraic geometry" in q or "scheme" in q or "cohomology" in q:
-        return [
-            {
-                "work_id": "arxiv:math.AG-demo-001",
-                "title": "Foundational Topics in Algebraic Geometry (demo)",
-                "summary": "Fallback demo result before lexical index is built.",
-                "category": "math.AG",
-                "published": None,
-                "updated": None,
-                "score": 0.91,
-                "source": "arxiv",
-                "top_block_type": "paragraph",
-                "math_density": 0.0,
-            }
-        ]
-    return []
+    """Search the local SQLite index. Returns empty list when index has no matches."""
+    return _search_sqlite(req)

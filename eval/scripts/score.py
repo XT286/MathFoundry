@@ -1,24 +1,16 @@
 #!/usr/bin/env python3
+"""Score evaluation results and write summary.json."""
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 from statistics import mean
 
+from mathfoundry.io_utils import load_jsonl
+
 RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
 OUT = RESULTS_DIR / "summary.json"
-
-
-def load_jsonl(path: Path):
-    rows = []
-    if not path.exists():
-        return rows
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        rows.append(json.loads(line))
-    return rows
 
 
 def main() -> None:

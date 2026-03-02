@@ -1,99 +1,15 @@
 #!/usr/bin/env python3
+"""Resumable full math.AG ingestion from ArXiv with checkpointing."""
+
 from __future__ import annotations
 
 import json
 import os
-import random
 import time
-import urllib.parse
-import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from pathlib import Path
 
-import httpx
-
-ARXIV_API = "https://export.arxiv.org/api/query"
-ATOM_NS = {
-    "atom": "http://www.w3.org/2005/Atom",
-    "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
-}
-
-
-def fetch_feed(start: int, page_size: int, query: str) -> str:
-    params = {
-        "search_query": query,
-        "start": start,
-        "max_results": page_size,
-        "sortBy": "submittedDate",
-        "sortOrder": "descending",
-    }
-    url = f"{ARXIV_API}?{urllib.parse.urlencode(params)}"
-
-    delay = 5.0
-    with httpx.Client(timeout=90.0, follow_redirects=True, headers={"User-Agent": "MathFoundry/0.1 (full AG ingest)"}) as c:
-        for attempt in range(1, 41):
-            try:
-                r = c.get(url)
-            except httpx.HTTPError:
-                # Transport/timeout/etc.
-                jitter = random.uniform(0.0, 2.0)
-                time.sleep(delay + jitter)
-                delay = min(delay * 1.5, 240)
-                continue
-
-            if r.status_code == 429:
-                jitter = random.uniform(0.0, 2.0)
-                time.sleep(delay + jitter)
-                delay = min(delay * 1.5, 240)
-                continue
-
-            if 500 <= r.status_code <= 599:
-                jitter = random.uniform(0.0, 2.0)
-                time.sleep(delay + jitter)
-                delay = min(delay * 1.4, 240)
-                continue
-
-            r.raise_for_status()
-            return r.text
-
-    raise RuntimeError(f"fetch failed after retries (start={start}, page_size={page_size})")
-
-
-def parse_total(xml_text: str) -> int:
-    root = ET.fromstring(xml_text)
-    t = root.findtext("opensearch:totalResults", default="0", namespaces=ATOM_NS)
-    try:
-        return int(t)
-    except Exception:
-        return 0
-
-
-def parse_entries(xml_text: str) -> list[dict]:
-    root = ET.fromstring(xml_text)
-    out: list[dict] = []
-    for e in root.findall("atom:entry", ATOM_NS):
-        aid = (e.findtext("atom:id", default="", namespaces=ATOM_NS) or "").strip()
-        title = " ".join((e.findtext("atom:title", default="", namespaces=ATOM_NS) or "").split())
-        summary = " ".join((e.findtext("atom:summary", default="", namespaces=ATOM_NS) or "").split())
-        updated = (e.findtext("atom:updated", default="", namespaces=ATOM_NS) or "").strip()
-        published = (e.findtext("atom:published", default="", namespaces=ATOM_NS) or "").strip()
-        out.append(
-            {
-                "work_id": aid.replace("http://arxiv.org/abs/", "arxiv:").replace("https://arxiv.org/abs/", "arxiv:"),
-                "title": title,
-                "summary": summary,
-                "updated": updated,
-                "published": published,
-                "category": "math.AG",
-            }
-        )
-    return out
-
-
-def dir_size_bytes(path: Path) -> int:
-    if not path.exists():
-        return 0
-    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file())
+from mathfoundry.arxiv import dir_size_bytes, fetch_feed, parse_entries, parse_total
 
 
 def main() -> None:
@@ -116,10 +32,10 @@ def main() -> None:
         start = int(ck.get("next_start", 0))
         total_available = int(ck.get("total_available", 0))
         kept = int(ck.get("kept", 0))
-        pages_done = int(ck.get("pages_done", 0))  # lifetime counter
+        pages_done = int(ck.get("pages_done", 0))
         mode = "a"
     else:
-        first = fetch_feed(start=0, page_size=1, query=query)
+        first = fetch_feed(query, start=0, page_size=1)
         total_available = parse_total(first)
         start = 0
         kept = 0
@@ -137,7 +53,7 @@ def main() -> None:
                 break
 
             try:
-                xml = fetch_feed(start=start, page_size=current_page_size, query=query)
+                xml = fetch_feed(query, start=start, page_size=current_page_size)
             except RuntimeError as e:
                 if current_page_size > 50:
                     current_page_size = max(50, current_page_size // 2)
@@ -149,8 +65,8 @@ def main() -> None:
             if not entries:
                 break
 
-            for e in entries:
-                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+            for entry in entries:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
                 kept += 1
 
             pages_done += 1

@@ -3,12 +3,10 @@ from __future__ import annotations
 import re
 import sqlite3
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
+from .arxiv import parse_entries as _parse_arxiv_entries
 from .config import CONFIG
 from .subareas import detect_ag_subareas
-
-ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
 _BLOCK_MARKERS = {
     "theorem": ["theorem", "lemma", "proposition", "corollary"],
     "definition": ["definition", "notion", "denote"],
@@ -68,35 +66,8 @@ def ensure_db() -> sqlite3.Connection:
 
 
 def parse_arxiv_atom(xml_text: str) -> list[dict]:
-    root = ET.fromstring(xml_text)
-    out: list[dict] = []
-    for e in root.findall("atom:entry", ATOM_NS):
-        id_text = (e.findtext("atom:id", default="", namespaces=ATOM_NS) or "").strip()
-        title = " ".join((e.findtext("atom:title", default="", namespaces=ATOM_NS) or "").split())
-        summary = " ".join((e.findtext("atom:summary", default="", namespaces=ATOM_NS) or "").split())
-        published = (e.findtext("atom:published", default="", namespaces=ATOM_NS) or "").strip()
-        updated = (e.findtext("atom:updated", default="", namespaces=ATOM_NS) or "").strip()
-
-        primary_cat = None
-        for c in e.findall("atom:category", ATOM_NS):
-            term = c.attrib.get("term")
-            if term and term.startswith("math."):
-                primary_cat = term
-                break
-
-        work_id = id_text.replace("http://arxiv.org/abs/", "arxiv:").replace("https://arxiv.org/abs/", "arxiv:")
-        if work_id and title:
-            out.append(
-                {
-                    "work_id": work_id,
-                    "title": title,
-                    "summary": summary,
-                    "category": primary_cat,
-                    "published": published,
-                    "updated": updated,
-                }
-            )
-    return out
+    """Parse ArXiv Atom XML into normalised dicts (delegates to shared parser)."""
+    return _parse_arxiv_entries(xml_text)
 
 
 def _estimate_tokens(text: str) -> int:

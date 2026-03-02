@@ -20,6 +20,8 @@ def health() -> dict:
         "max_raw_files": CONFIG.max_raw_files,
         "max_results_per_ingest": CONFIG.max_results_per_ingest,
         "data_dir": CONFIG.data_dir,
+        "openai_model": CONFIG.openai_model,
+        "openai_configured": bool(CONFIG.openai_api_key),
     }
 
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Run baseline comparison scaffold: call the local API and collect S0/S2 templates."""
+
 from __future__ import annotations
 
 import argparse
@@ -7,26 +9,11 @@ from pathlib import Path
 
 import httpx
 
+from mathfoundry.io_utils import load_jsonl, write_jsonl
+
 ROOT = Path(__file__).resolve().parents[1]
 BENCH = ROOT / "benchmark" / "queries.jsonl"
 RESULTS = ROOT / "results"
-
-
-def load_jsonl(path: Path) -> list[dict]:
-    out: list[dict] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        out.append(json.loads(line))
-    return out
-
-
-def write_jsonl(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for r in rows:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 
 def call_json(client: httpx.Client, url: str, payload: dict) -> dict:
@@ -55,7 +42,7 @@ def main() -> None:
             query = q["query"]
 
             search = call_json(client, f"{args.base_url}/search", {"query": query, "limit": 8})
-            qa = call_json(client, f"{args.base_url}/qa", {"query": query, "mode": "brief"})
+            qa = call_json(client, f"{args.base_url}/qa", {"query": query})
             ver = call_json(client, f"{args.base_url}/qa/verify", {"answer": qa})
 
             s2_rows.append(

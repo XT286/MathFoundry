@@ -1,10 +1,109 @@
+"""Citation-grounded answer generation and verification using OpenAI."""
+
+from __future__ import annotations
+
+import json
+import logging
+
+import httpx
+
+from .config import CONFIG
 from .models import Claim, Citation, GroundedAnswer, VerifyResponse
+
+logger = logging.getLogger(__name__)
 
 _ALLOWED_SUPPORT_LEVELS = {"direct", "indirect"}
 _ALLOWED_CONFIDENCE = {"high", "medium", "low", "insufficient_evidence"}
 
+# ---------------------------------------------------------------------------
+# OpenAI-powered grounded answer generation
+# ---------------------------------------------------------------------------
+
+_SYSTEM_PROMPT = """\
+You are MathFoundry, a citation-grounded math-literature research assistant.
+Your job: answer the user's query using ONLY the provided reference passages.
+
+Rules:
+1. Every factual claim MUST cite at least one reference by its work_id.
+2. If the references are insufficient, say so and set confidence to "insufficient_evidence".
+3. Do NOT fabricate citations or invent paper titles.
+4. Respond in the exact JSON schema below (no markdown, no extra keys).
+
+JSON schema:
+{
+  "answer_summary": "...",
+  "claims": [
+    {
+      "text": "One factual claim sentence.",
+      "supporting_citations": [{"work_id": "arxiv:XXXX.XXXXX"}],
+      "support_level": "direct"   // or "indirect"
+    }
+  ],
+  "confidence": "high" | "medium" | "low" | "insufficient_evidence",
+  "limitations": ["..."],
+  "query_refinements": ["..."]
+}
+"""
+
+
+def _build_context(candidates: list[dict], max_refs: int = 8) -> str:
+    """Format retrieved candidates into a numbered reference block."""
+    lines = []
+    for i, c in enumerate(candidates[:max_refs], start=1):
+        wid = c.get("work_id", "unknown")
+        title = c.get("title", "")
+        summary = (c.get("summary", "") or "")[:600]
+        lines.append(f"[{i}] work_id={wid}\n    title: {title}\n    summary: {summary}")
+    return "\n\n".join(lines)
+
+
+def _call_openai(query: str, context: str) -> dict:
+    """Call OpenAI Responses API and parse the JSON output."""
+    user_msg = f"Query: {query}\n\nReferences:\n{context}"
+
+    with httpx.Client(
+        headers={
+            "Authorization": f"Bearer {CONFIG.openai_api_key}",
+            "Content-Type": "application/json",
+        },
+        timeout=120.0,
+    ) as client:
+        r = client.post(
+            "https://api.openai.com/v1/responses",
+            json={
+                "model": CONFIG.openai_model,
+                "instructions": _SYSTEM_PROMPT,
+                "input": user_msg,
+            },
+        )
+        r.raise_for_status()
+        data = r.json()
+
+    # Extract text from Responses API structure:
+    # output -> [message] -> content -> [output_text] -> text
+    raw = ""
+    for msg in data.get("output", []):
+        for block in msg.get("content", []):
+            if block.get("type") == "output_text":
+                raw = block.get("text", "")
+                break
+        if raw:
+            break
+
+    raw = raw.strip()
+    # Strip markdown code fences if present
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[-1]
+    if raw.endswith("```"):
+        raw = raw.rsplit("```", 1)[0]
+    raw = raw.strip()
+    return json.loads(raw)
+
 
 def answer_with_grounding(query: str, candidates: list[dict]) -> GroundedAnswer:
+    """Generate a citation-grounded answer for *query* given retrieved *candidates*."""
+
+    # No candidates → abstain immediately
     if not candidates:
         return GroundedAnswer(
             answer_summary="Insufficient evidence to answer reliably from current indexed corpus.",
@@ -16,20 +115,88 @@ def answer_with_grounding(query: str, candidates: list[dict]) -> GroundedAnswer:
             ],
         )
 
-    top = candidates[0]
-    claim = Claim(
-        text=f"A likely relevant starting reference is '{top['title']}'.",
-        supporting_citations=[Citation(work_id=top["work_id"])],
-        support_level="direct",
-    )
+    # No API key → fall back to scaffold answer
+    if not CONFIG.openai_api_key:
+        top = candidates[0]
+        claim = Claim(
+            text=f"A likely relevant starting reference is '{top['title']}'.",
+            supporting_citations=[Citation(work_id=top["work_id"])],
+            support_level="direct",
+        )
+        return GroundedAnswer(
+            answer_summary="Here is a citation-grounded starting point from the indexed corpus. (OpenAI key not configured — scaffold mode.)",
+            claims=[claim],
+            references=[top],
+            confidence="low",
+            limitations=["Scaffold answer; set OPENAI_API_KEY for full LLM-powered grounding."],
+        )
+
+    # Full LLM-grounded answer
+    context = _build_context(candidates)
+    ref_lookup = {c["work_id"]: c for c in candidates}
+
+    try:
+        parsed = _call_openai(query, context)
+    except Exception as exc:
+        logger.warning("OpenAI call failed: %s — falling back to scaffold", exc)
+        top = candidates[0]
+        claim = Claim(
+            text=f"A likely relevant starting reference is '{top['title']}'.",
+            supporting_citations=[Citation(work_id=top["work_id"])],
+            support_level="direct",
+        )
+        return GroundedAnswer(
+            answer_summary=f"OpenAI call failed ({type(exc).__name__}); showing top retrieval result instead.",
+            claims=[claim],
+            references=[top],
+            confidence="low",
+            limitations=[f"LLM call failed: {exc}"],
+        )
+
+    # Parse claims
+    claims: list[Claim] = []
+    for raw_claim in parsed.get("claims", []):
+        cits = [
+            Citation(work_id=c.get("work_id", ""), passage_id=c.get("passage_id"))
+            for c in raw_claim.get("supporting_citations", [])
+        ]
+        claims.append(
+            Claim(
+                text=raw_claim.get("text", ""),
+                supporting_citations=cits,
+                support_level=raw_claim.get("support_level", "direct"),
+            )
+        )
+
+    # Collect cited references
+    cited_ids = set()
+    for c in claims:
+        for cit in c.supporting_citations:
+            cited_ids.add(cit.work_id)
+
+    references = [ref_lookup[wid] for wid in cited_ids if wid in ref_lookup]
+    # Also include top candidates even if not explicitly cited
+    for c in candidates[:5]:
+        if c["work_id"] not in {r["work_id"] for r in references}:
+            references.append(c)
+
+    confidence = parsed.get("confidence", "low")
+    if confidence not in _ALLOWED_CONFIDENCE:
+        confidence = "low"
+
     return GroundedAnswer(
-        answer_summary="Here is a citation-grounded starting point from the indexed algebraic-geometry-focused corpus.",
-        claims=[claim],
-        references=[top],
-        confidence="low",
-        limitations=["MVP scaffold answer; full passage-level verification not yet enabled."],
-        query_refinements=["Ask for theorem-level comparison once ingestion and passage indexing expands."],
+        answer_summary=parsed.get("answer_summary", ""),
+        claims=claims,
+        references=references,
+        confidence=confidence,
+        limitations=parsed.get("limitations", []),
+        query_refinements=parsed.get("query_refinements", []),
     )
+
+
+# ---------------------------------------------------------------------------
+# Verification (unchanged logic)
+# ---------------------------------------------------------------------------
 
 
 def _confidence_from_ratio(ratio: float) -> str:

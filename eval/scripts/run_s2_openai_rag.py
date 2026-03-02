@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Run RAG + verify evaluation where the generation step uses OpenAI."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,25 +10,11 @@ from pathlib import Path
 
 import httpx
 
+from mathfoundry.io_utils import load_jsonl, write_jsonl
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_QUERIES = ROOT / "benchmark" / "ag_queries_v1.jsonl"
 DEFAULT_OUT = ROOT / "results" / "s2_rag_verify.jsonl"
-
-
-def load_jsonl(path: Path) -> list[dict]:
-    rows: list[dict] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line:
-            rows.append(json.loads(line))
-    return rows
-
-
-def write_jsonl(path: Path, rows: list[dict]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def openai_answer_with_context(client: httpx.Client, model: str, query: str, refs: list[dict]) -> str:
@@ -50,7 +38,12 @@ def openai_answer_with_context(client: httpx.Client, model: str, query: str, ref
     )
     r.raise_for_status()
     data = r.json()
-    return (data.get("output_text") or "").strip()
+    # Responses API: output -> [message] -> content -> [output_text] -> text
+    for msg in data.get("output", []):
+        for block in msg.get("content", []):
+            if block.get("type") == "output_text":
+                return block.get("text", "").strip()
+    return ""
 
 
 def main() -> None:

@@ -28,7 +28,6 @@ class SearchRequest(BaseModel):
 
 class QARequest(BaseModel):
     query: str
-    mode: str = "brief"
 
 
 class VerifyRequest(BaseModel):

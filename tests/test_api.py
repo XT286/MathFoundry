@@ -28,11 +28,12 @@ def test_qa_abstains_when_no_candidates():
     assert body["verification"]["must_abstain"] is True
 
 
-def test_search_returns_demo_for_ag_terms():
+def test_search_returns_results_or_empty():
     r = client.post("/search", json={"query": "algebraic geometry cohomology"})
     assert r.status_code == 200
     body = r.json()
-    assert body["count"] >= 1
+    assert isinstance(body["count"], int)
+    assert isinstance(body["results"], list)
 
 
 def test_verify_flags_uncited_claims():
