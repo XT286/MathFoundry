@@ -17,6 +17,46 @@ This folder contains benchmark inputs, run outputs, and scoring scripts for comp
 3. Run `scripts/score.py`
 4. Review `results/summary.json`
 
+## Fair Comparison Policy (RAG vs Pure LLM)
+
+To keep comparison fair when corpus coverage is incomplete:
+
+1. Split benchmark queries into two tracks:
+   - **In-corpus track**: retrieval has strong support (recommended threshold: `max_score >= 0.75`)
+   - **Weak-corpus track**: retrieval is weak or sparse (`max_score < 0.75`)
+2. Report all metrics separately for both tracks.
+3. For RAG, low-retrieval-confidence queries should abstain or propose query refinements.
+4. Do not use weak-corpus queries alone to conclude pure LLM superiority; they measure pretrained prior knowledge more than retrieval quality.
+
+Suggested split files:
+- `benchmark/ag_queries_in_corpus_v1.jsonl`
+- `benchmark/ag_queries_weak_corpus_v1.jsonl`
+
+## Recommended RAG Metrics
+
+### Retrieval metrics
+- `Recall@k` / `Hit@k`
+- `MRR@k`
+- `nDCG@k`
+- `Precision@k`
+
+### Grounding / faithfulness metrics
+- Citation precision (claims supported by cited references)
+- Citation recall (important claims cited)
+- Hallucination rate / unsupported claim rate
+- Verification pass rate (`verify_ok`, coverage ratio)
+
+### Answer quality metrics
+- Correctness (human or LLM-judge rubric)
+- Completeness/helpfulness
+- Abstention quality (abstain precision/recall)
+
+### System metrics
+- Latency (p50/p95)
+- Token usage
+- Cost per query
+- Failure/timeout rate
+
 ## OpenAI-based runs (latest ChatGPT API model)
 Set API key:
 
@@ -48,3 +88,11 @@ Score:
 ```bash
 python eval/scripts/score.py
 ```
+
+## Current Evaluation Plan
+
+1. Freeze corpus/index snapshot for reproducibility.
+2. Build in-corpus vs weak-corpus query splits from retrieval coverage.
+3. Run S0 and S2 on **in-corpus** track first (primary fairness comparison).
+4. Run S0 and S2 on weak-corpus track (stress/coverage analysis).
+5. Score and publish side-by-side summary for both tracks.

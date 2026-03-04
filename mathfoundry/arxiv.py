@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import random
 import time
 import urllib.parse
@@ -27,6 +28,7 @@ def fetch_feed(
     sort_order: str = "descending",
     timeout: float = 90.0,
     max_retries: int = 40,
+    verbose: bool = False,
 ) -> str:
     """Fetch an ArXiv Atom feed page with exponential-backoff retry."""
     params = {
@@ -45,19 +47,73 @@ def fetch_feed(
         headers={"User-Agent": _USER_AGENT},
     ) as client:
         for _attempt in range(1, max_retries + 1):
+            if verbose:
+                print(
+                    json.dumps(
+                        {
+                            "event": "fetch_attempt",
+                            "attempt": _attempt,
+                            "max_retries": max_retries,
+                            "start": start,
+                            "page_size": page_size,
+                        }
+                    ),
+                    flush=True,
+                )
             try:
                 r = client.get(url)
-            except httpx.HTTPError:
+            except httpx.HTTPError as e:
+                if verbose:
+                    print(
+                        json.dumps(
+                            {
+                                "event": "fetch_retry",
+                                "attempt": _attempt,
+                                "start": start,
+                                "page_size": page_size,
+                                "reason": repr(e),
+                                "sleep_sec": round(delay, 2),
+                            }
+                        ),
+                        flush=True,
+                    )
                 time.sleep(delay + random.uniform(0.0, 2.0))
                 delay = min(delay * 1.5, 240)
                 continue
 
             if r.status_code == 429 or 500 <= r.status_code <= 599:
+                if verbose:
+                    print(
+                        json.dumps(
+                            {
+                                "event": "fetch_retry_status",
+                                "attempt": _attempt,
+                                "start": start,
+                                "page_size": page_size,
+                                "status_code": r.status_code,
+                                "sleep_sec": round(delay, 2),
+                            }
+                        ),
+                        flush=True,
+                    )
                 time.sleep(delay + random.uniform(0.0, 2.0))
                 delay = min(delay * 1.5, 240)
                 continue
 
             r.raise_for_status()
+            if verbose:
+                print(
+                    json.dumps(
+                        {
+                            "event": "fetch_success",
+                            "attempt": _attempt,
+                            "start": start,
+                            "page_size": page_size,
+                            "status_code": r.status_code,
+                        }
+                    ),
+                    flush=True,
+                )
             return r.text
 
     raise RuntimeError(f"fetch failed after {max_retries} retries (start={start}, page_size={page_size})")

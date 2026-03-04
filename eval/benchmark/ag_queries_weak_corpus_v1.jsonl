@@ -1,0 +1,6 @@
+{"id": "ag003", "branch": "algebraic_geometry", "intent": "foundational_refs", "query": "Foundational references for étale cohomology aimed at algebraic geometers.", "retrieval_max_score": 0.7405, "retrieval_count": 10}
+{"id": "ag004", "branch": "algebraic_geometry", "intent": "foundational_refs", "query": "Core references for intersection theory and Chow groups for a first serious reading plan.", "retrieval_max_score": 0.7419, "retrieval_count": 8}
+{"id": "ag006", "branch": "algebraic_geometry", "intent": "theorem_lookup", "query": "Key references around the Weil conjectures proof strategy and later expositions.", "retrieval_max_score": 0.6667, "retrieval_count": 1}
+{"id": "ag010", "branch": "algebraic_geometry", "intent": "prerequisites", "query": "What should I read before studying derived algebraic geometry from an AG background?", "retrieval_max_score": 0.6832, "retrieval_count": 4}
+{"id": "ag013", "branch": "algebraic_geometry", "intent": "survey", "query": "Survey references for abelian varieties and polarizations, beginner-to-intermediate path.", "retrieval_max_score": 0.5859, "retrieval_count": 3}
+{"id": "ag023", "branch": "algebraic_geometry", "intent": "historical", "query": "Classic papers that shaped modern scheme theory after Grothendieck.", "retrieval_max_score": 0.5862, "retrieval_count": 1}
