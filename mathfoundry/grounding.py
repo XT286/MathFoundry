@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 import httpx
 
@@ -57,6 +58,60 @@ def _build_context(candidates: list[dict], max_refs: int = 8) -> str:
     return "\n\n".join(lines)
 
 
+def _extract_first_json_object(text: str) -> str:
+    """Extract the first top-level JSON object from text."""
+    start = text.find("{")
+    if start < 0:
+        raise ValueError("No JSON object start found in model output")
+
+    in_string = False
+    escaped = False
+    depth = 0
+    for i in range(start, len(text)):
+        ch = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            continue
+        if ch == '"':
+            in_string = True
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+
+    raise ValueError("Unbalanced JSON object in model output")
+
+
+def _load_model_json(raw: str) -> dict:
+    """Parse model JSON robustly; repair invalid backslash escapes when needed."""
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[-1]
+    if text.endswith("```"):
+        text = text.rsplit("```", 1)[0]
+    text = text.strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        # Sometimes model adds prose around JSON; extract object region.
+        obj_text = _extract_first_json_object(text)
+        try:
+            return json.loads(obj_text)
+        except json.JSONDecodeError:
+            # Common issue: invalid backslash escapes from LaTeX fragments.
+            repaired = re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", obj_text)
+            return json.loads(repaired)
+
+
 def _call_openai(query: str, context: str) -> dict:
     """Call OpenAI Responses API and parse the JSON output."""
     user_msg = f"Query: {query}\n\nReferences:\n{context}"
@@ -90,14 +145,7 @@ def _call_openai(query: str, context: str) -> dict:
         if raw:
             break
 
-    raw = raw.strip()
-    # Strip markdown code fences if present
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[-1]
-    if raw.endswith("```"):
-        raw = raw.rsplit("```", 1)[0]
-    raw = raw.strip()
-    return json.loads(raw)
+    return _load_model_json(raw)
 
 
 def answer_with_grounding(query: str, candidates: list[dict]) -> GroundedAnswer:
