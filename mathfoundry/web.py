@@ -54,7 +54,7 @@ def home() -> str:
 <head>
   <meta charset=\"utf-8\" />
   <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\" />
-  <title>MathFoundry</title>
+  <title>AI.MathFoundry</title>
   <style>
     body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; background: #0b1020; color: #eaf0ff; }
     .wrap { max-width: 1080px; margin: 0 auto; }
@@ -75,7 +75,7 @@ def home() -> str:
 </head>
 <body>
 <div class=\"wrap\">
-  <h1>MathFoundry <span class=\"badge\">Ask (MVP)</span></h1>
+  <h1>AI.MathFoundry <span class=\"badge\">Ask (MVP)</span></h1>
   <div class=\"muted\">Ask a math literature question. The app returns grounded answers with citations and verification.</div>
 
   <div class=\"card\">

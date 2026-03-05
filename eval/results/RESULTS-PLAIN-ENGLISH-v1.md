@@ -1,69 +1,87 @@
-# MathFoundry Eval Results (Plain English)
+# MathFoundry Eval Results (Plain English, Updated)
 
-This note summarizes the latest evaluation run in plain language.
+This note summarizes the **current** run outputs and includes explicit **S0 vs S2 comparison**.
 
-## What was evaluated
+## Scope
 
-We split the benchmark into two groups so the comparison is fair:
+Benchmark was split for fairness:
 
-- **In-corpus track**: 24 queries where retrieval coverage was strong.
-- **Weak-corpus track**: 6 queries where retrieval coverage was weaker.
+- **In-corpus track**: 24 queries (strong retrieval coverage)
+- **Weak-corpus track**: 6 queries (weaker retrieval coverage)
 
-Systems compared:
+Systems:
 
-- **S0 (Pure LLM)**: OpenAI model answers directly with no retrieval grounding.
-- **S2 (RAG + verify)**: MathFoundry retrieval + OpenAI synthesis + verification endpoint.
+- **S0 (Pure LLM)**: model answers directly, no retrieval grounding
+- **S2 (RAG + verify)**: retrieval + OpenAI synthesis + `/qa/verify` checks
 
-## Data snapshot used
+Model used for this latest run:
+
+- **`gpt-5.3-chat-latest`**
+
+Data snapshot:
 
 - Corpus file: `data/topic/ag_all_math_ag.jsonl`
-- Corpus size at run time: **10,080 papers**
+- Corpus size at run: **10,080 papers**
 
-## Run outputs generated
+Output files (latest GPT-5.x run):
 
-- `eval/results/s2_rag_verify_in_corpus_v1.jsonl` (24 rows)
-- `eval/results/s0_pure_llm_in_corpus_v1.jsonl` (24 rows)
-- `eval/results/s2_rag_verify_weak_corpus_v1.jsonl` (6 rows)
-- `eval/results/s0_pure_llm_weak_corpus_v1.jsonl` (6 rows)
+- `eval/results/s0_pure_llm_in_corpus_gpt53_v1.jsonl` (24)
+- `eval/results/s2_rag_verify_in_corpus_gpt53_v1.jsonl` (24)
+- `eval/results/s0_pure_llm_weak_corpus_gpt53_v1.jsonl` (6)
+- `eval/results/s2_rag_verify_weak_corpus_gpt53_v1.jsonl` (6)
 
-## What happened (quick facts)
+## Side-by-side comparison
 
 ### In-corpus track (24 queries)
 
-- S2 found retrieval evidence for every query.
-- Average search results returned: **8.0**
-- Average references attached in final S2 output: **5.0**
-- Verification endpoint returned `verify_ok=true` for **24/24**.
-- S2 did **not abstain** on any query in this track.
+- **Coverage**:
+  - S2: avg `search_count` = **8.0**, avg `references` = **5.0**
+  - S0: no retrieval/citation grounding fields
+- **Verification**:
+  - S2 `verify_ok`: **24/24 (100%)**
+  - S2 `must_abstain`: **0/24**
+- **Answer length profile** (character count):
+  - S0 mean: **2351.0**
+  - S2 mean: **1160.8**
+  - S0 answers are roughly **2x longer** on average.
+
+Interpretation: in in-corpus cases, S2 is more concise and evidence-attached; S0 is more expansive but not retrieval-grounded.
 
 ### Weak-corpus track (6 queries)
 
-- S2 still returned evidence for each query, but with lower retrieval counts.
-- Average search results returned: **4.167**
-- Average references attached in final S2 output: **3.167**
-- Verification endpoint returned `verify_ok=true` for **6/6**.
-- S2 did **not abstain** on any query in this track.
+- **Coverage**:
+  - S2 avg `search_count` = **4.167**
+  - S2 avg `references` = **3.167**
+- **Verification**:
+  - S2 `verify_ok`: **6/6 (100%)**
+  - S2 `must_abstain`: **0/6**
+- **Answer length profile**:
+  - S0 mean: **2136.5**
+  - S2 mean: **931.7**
+  - S0 is roughly **2.3x longer** on average.
 
-## Important interpretation notes
+Interpretation: in weak-corpus cases, S2 still produces grounded outputs but with thinner retrieval support; S0 remains long and fluent, likely drawing more from model prior knowledge.
 
-- These outputs are **not final quality judgments yet**.
-- Current JSONL results are auto-generated and still need human rubric scoring for:
-  - correctness,
-  - citation adequacy/precision,
-  - overclaim risk,
-  - abstention quality.
-- `verify_ok=true` here mostly confirms schema/citation consistency checks; it does **not** guarantee mathematical correctness by itself.
+## Notable behavior differences
 
-## Early qualitative pattern from sample inspection
+- S0 tends to give textbook-style, broad answers with external-looking references and higher verbosity.
+- S2 tends to stay within retrieved paper context and produces shorter, tighter summaries.
+- Largest S0-vs-S2 gaps still appear on classic/historical questions, where retrieval support is weakest.
 
-- **S0 (pure LLM)** tends to provide polished textbook-style answers and external references from model memory.
-- **S2 (RAG)** tends to stay closer to retrieved corpus evidence and often states when evidence is weak, but may still sound confident.
-- Weak-corpus questions (historical/classic references) are where fairness concerns are most significant and where track separation is most important.
+## What these results do *not* prove yet
 
-## Recommended next step
+These files are still **pre-rubric**. They do not yet provide final judgments on:
 
-Run structured human review on both tracks using a shared rubric, then publish:
+- mathematical correctness,
+- citation adequacy quality,
+- overclaim risk,
+- abstention quality.
 
-1. In-corpus comparison table (primary decision signal)
-2. Weak-corpus comparison table (coverage stress test)
-3. Error analysis with 5 best + 5 worst examples per system
+Also, `verify_ok=true` indicates structural/citation consistency checks passed, not guaranteed mathematical truth.
+
+## Next step (to finalize comparison)
+
+Use `eval/rubric/review_sheet_v1.csv` + `eval/rubric/HUMAN-REVIEW-GUIDELINE-v1.md` to complete human scoring, then publish final S0 vs S2 scorecards:
+
+1. In-corpus (primary decision metric)
+2. Weak-corpus (stress/coverage diagnostic)

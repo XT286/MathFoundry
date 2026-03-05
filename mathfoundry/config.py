@@ -18,6 +18,7 @@ class ProjectConfig:
     data_dir: str = os.getenv("MATHFOUNDRY_DATA_DIR", "./data")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("MATHFOUNDRY_OPENAI_MODEL", "gpt-4.1")
+    openai_base_url: str = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
 
 CONFIG = ProjectConfig()

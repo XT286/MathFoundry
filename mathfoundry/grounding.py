@@ -123,8 +123,9 @@ def _call_openai(query: str, context: str) -> dict:
         },
         timeout=httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=10.0),
     ) as client:
+        base_url = CONFIG.openai_base_url.rstrip("/")
         r = client.post(
-            "https://api.openai.com/v1/responses",
+            f"{base_url}/responses",
             json={
                 "model": CONFIG.openai_model,
                 "instructions": _SYSTEM_PROMPT,
